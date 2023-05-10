@@ -29,7 +29,7 @@ tracer is required. This is why we call it contravariant tracing.
 -- Puts text to stdout.
 stdoutTracer :: Tracer IO Text
 
--- A somain-specific event type.
+-- A domain-specific event type.
 data Event = EventA | EventB Int
 
 -- The log format for an Event.

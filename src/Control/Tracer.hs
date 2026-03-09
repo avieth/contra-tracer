@@ -68,6 +68,7 @@ module Control.Tracer
     , natTracer
     , Arrow.nat
     , traceMaybe
+    , traceMaybeM
     , squelchUnless
     -- * Re-export of Contravariant
     , Contravariant(..)
@@ -220,6 +221,14 @@ traceMaybe :: Monad m => (a -> Maybe b) -> Tracer m b -> Tracer m a
 traceMaybe k tr = Tracer $ classify >>> (Arrow.squelch ||| use tr)
   where
   classify = arr (maybe (Left ()) Right . k)
+
+-- | A monadic version of `traceMaybe`.
+--
+traceMaybeM :: Monad m => (a -> m (Maybe b)) -> Tracer m b -> Tracer m a
+traceMaybeM k tr = Tracer $ classify >>> (Arrow.squelch ||| use tr)
+  where
+  classify = Arrow.effect (fmap (maybe (Left ()) Right) . k)
+
 
 -- | Uses 'traceMaybe' to give a tracer which emits only if a predicate is true.
 squelchUnless :: Monad m => (a -> Bool) -> Tracer m a -> Tracer m a

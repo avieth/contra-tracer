@@ -54,6 +54,7 @@ specific tracer which takes domain-specific events is expected.
 
 module Control.Tracer
     ( Tracer (..)
+    , mkTracer
     , traceWith
     , arrow
     , use
@@ -178,6 +179,11 @@ instance Monad m => Semigroup (Tracer m s) where
 instance Monad m => Monoid (Tracer m s) where
     mappend = (<>)
     mempty  = nullTracer
+
+-- | Make an emitting tracer from a callback.
+--
+mkTracer :: Applicative m => (a -> m ()) -> Tracer m a
+mkTracer = Tracer . Arrow.emit
 
 {-# INLINE traceWith #-}
 -- | Run a tracer with a given input.

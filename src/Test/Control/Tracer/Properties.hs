@@ -48,7 +48,7 @@ laziness_3 = arrow $ proc b ->
 traceTraversable_laziness :: Monad m => Tracer m [a]
 traceTraversable_laziness = traceTraversable nullTracer
 
--- | If the inner tracer is null, mapping into a traversable should not
+-- | If the inner tracer is null, mapping into a foldable should not
 -- force the mapped structure.
 --
 -- @traceWith traceAll_laziness anything = pure ()@

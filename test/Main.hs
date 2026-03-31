@@ -2,8 +2,7 @@
 
 module Main where
 
-import Control.Exception (SomeException, evaluate, try)
-import Control.Monad (unless)
+import Control.Exception (SomeException, try)
 import Control.Tracer (traceWith)
 import Test.Control.Tracer.Properties
   ( laziness_1

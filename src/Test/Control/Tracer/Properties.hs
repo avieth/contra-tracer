@@ -41,3 +41,16 @@ laziness_3 = arrow $ proc b ->
     _ <- effect (error "failure") -< error "failure"
     _ <- use nullTracer ||| use nullTracer -< error "failure"
     returnA -< ()
+
+-- | If the inner tracer is null, traversing should not force the structure.
+--
+-- @traceWith traceTraversable_laziness anything = pure ()@
+traceTraversable_laziness :: Monad m => Tracer m [a]
+traceTraversable_laziness = traceTraversable nullTracer
+
+-- | If the inner tracer is null, mapping into a foldable should not
+-- force the mapped structure.
+--
+-- @traceWith traceAll_laziness anything = pure ()@
+traceAll_laziness :: Monad m => Tracer m Bool
+traceAll_laziness = traceAll (\_ -> (error "failure" :: [()])) nullTracer

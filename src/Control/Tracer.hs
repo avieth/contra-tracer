@@ -70,6 +70,8 @@ module Control.Tracer
     , Arrow.nat
     , traceMaybe
     , traceMaybeM
+    , traceAll
+    , traceTraversable
     , squelchUnless
     , squelchUnlessM
     -- * Re-export of Contravariant
@@ -81,6 +83,7 @@ module Control.Tracer
 import           Control.Arrow ((|||), (&&&), arr, runKleisli)
 import           Control.Category ((>>>))
 import           Data.Bool (bool)
+import           Data.Foldable (traverse_)
 import           Data.Functor.Contravariant (Contravariant (..), (>$<))
 import           Debug.Trace (traceM)
 
@@ -244,6 +247,15 @@ squelchUnless p = traceMaybe (\a -> bool Nothing (Just a) (p a))
 -- | A monadic version of `squelchUnless`.
 squelchUnlessM :: Monad m => (a -> m Bool) -> Tracer m a -> Tracer m a
 squelchUnlessM p = traceMaybeM (\a -> bool Nothing (Just a) <$> p a)
+
+traceTraversable :: (Monad m, Foldable t) => Tracer m a -> Tracer m (t a)
+traceTraversable tracer@(Tracer tr) =
+  case tr of
+    Arrow.Squelching _ -> nullTracer
+    _                  -> emit (traverse_ (traceWith tracer))
+
+traceAll :: (Monad m, Foldable t) => (b -> t a) -> Tracer m a -> Tracer m b
+traceAll f = contramap f . traceTraversable
 
 -- | Use a natural transformation to change the @m@ type. This is useful, for
 -- instance, to use concrete IO tracers in monad transformer stacks that have

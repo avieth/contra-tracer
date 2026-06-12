@@ -38,9 +38,14 @@ data TracerA m a b where
 
 -- | The resulting Kleisli arrow includes all of the effects required to do
 -- the emitting part.
+--
+-- Inlined so that GHC can eliminate the 'Kleisli' allocation at 'Squelching'
+-- call sites: with both this function and 'traceWith' inlined, GHC reduces
+-- @traceWith nullTracer x@ to @pure ()@ with no heap allocation.
 runTracerA :: Monad m => TracerA m a () -> Kleisli m a ()
-runTracerA (Emitting emits _noEmits) = emits >>> arr (const ())
-runTracerA (Squelching     _       ) =           arr (const ())
+runTracerA (Emitting emits _noEmits) = Kleisli (\x -> runKleisli emits x >> pure ())
+runTracerA (Squelching     _       ) = Kleisli (const (pure ()))
+{-# INLINE runTracerA #-}
 
 -- | Ignore the input and do not emit. The name is intended to lead to clear
 -- and suggestive arrow expressions.

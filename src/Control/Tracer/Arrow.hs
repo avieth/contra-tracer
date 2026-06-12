@@ -75,18 +75,36 @@ instance Monad m => Category (TracerA m) where
 
 instance Monad m => Arrow (TracerA m) where
   arr = compute
-  Squelching l     *** Squelching r     = Squelching (l  *** r )
-  Squelching l     *** Emitting   re rp = Emitting   (id *** re) (l  *** rp)
-  Emitting   le lp *** Squelching r     = Emitting   (le *** id) (lp *** r )
-  Emitting   le lp *** Emitting   re rp = Emitting   (le *** re) (lp *** rp)
+  Squelching l     *** Squelching r     = Squelching (l  **** r )
+  Squelching l     *** Emitting   re rp = Emitting   (id **** re) (l  **** rp)
+  Emitting   le lp *** Squelching r     = Emitting   (le **** id) (lp **** r )
+  Emitting   le lp *** Emitting   re rp = Emitting   (le **** re) (lp **** rp)
 
 instance Monad m => ArrowChoice (TracerA m) where
-  Squelching l     +++ Squelching r     = Squelching (l +++ r)
-  Squelching l     +++ Emitting   re rp = Emitting   (id +++ re) (l  +++ rp)
-  Emitting   le lp +++ Squelching r     = Emitting   (le +++ id) (lp +++ r )
-  Emitting   le lp +++ Emitting   re rp = Emitting   (le +++ re) (lp +++ rp)
+  Squelching l     +++ Squelching r     = Squelching (l   +++ r )
+  Squelching l     +++ Emitting   re rp = Emitting   (id  +++ re) (l   +++ rp)
+  Emitting   le lp +++ Squelching r     = Emitting   (le  +++ id) (lp  +++ r )
+  Emitting   le lp +++ Emitting   re rp = Emitting   (le  +++ re) (lp  +++ rp)
+  Squelching l     ||| Squelching r     = Squelching (l   ||| r )
+  Squelching l     ||| Emitting   re rp = Emitting   (id  +++ re) (l   ||| rp)
+  Emitting   le lp ||| Squelching r     = Emitting   (le  +++ id) (lp  ||| r )
+  Emitting   le lp ||| Emitting   re rp = Emitting   (le  +++ re) (lp  ||| rp)
 
 -- | Use a natural transformation to change the underlying monad.
 nat :: (forall x . m x -> n x) -> TracerA m a b -> TracerA n a b
 nat h (Squelching (Kleisli k))             = Squelching (Kleisli (h . k))
 nat h (Emitting   (Kleisli k) (Kleisli l)) = Emitting   (Kleisli (h . k)) (Kleisli (h . l))
+
+-- Strict parallel composition for 'Kleisli' arrows. The 'Arrow' class default
+--
+--   f *** g = first f >>> arr swap >>> first g >>> arr swap
+--
+-- allocates ~1,000 bytes of short-lived thunks per '(***)' level per dispatch
+-- because the lazy irrefutable pattern @~(b,d)@ in 'first' allocates two
+-- thunks on every call. GHC issue #10528 prevents the simplifier from
+-- collapsing this. This strict version eliminates all per-dispatch allocation.
+infixr 3 ****
+(****) :: Monad m => Kleisli m a b -> Kleisli m c d -> Kleisli m (a, c) (b, d)
+(Kleisli f) **** (Kleisli g) =
+    Kleisli $ \(b, d) -> f b >>= \c -> g d >>= \e -> return (c, e)
+{-# INLINE (****) #-}

@@ -51,6 +51,7 @@ specific tracer which takes domain-specific events is expected.
 
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE BangPatterns #-}
 
 module Control.Tracer
     ( Tracer (..)
@@ -140,7 +141,7 @@ import qualified Control.Tracer.Arrow as Arrow
 -- >   case event of
 -- >     This i -> use tr  -< i
 -- >     That _ -> squelch -< ()
--- 
+--
 -- The key point of using the arrow representation we have here is that this
 -- tracer will not necessarily need to force @event@: if the input tracer @tr@
 -- does not force its value, then @event@ will not be forced. To elaborate,
@@ -170,7 +171,8 @@ import qualified Control.Tracer.Arrow as Arrow
 newtype Tracer m a = Tracer { runTracer :: Arrow.TracerA m a () }
 
 instance Monad m => Contravariant (Tracer m) where
-  contramap f tracer = Tracer (arr f >>> use tracer)
+  contramap f !tracer = Tracer $! (arr f >>> use tracer)
+  {-# INLINE contramap #-}
 
 -- | @tr1 <> tr2@ will run @tr1@ and then @tr2@ with the same input.
 instance Monad m => Semigroup (Tracer m s) where

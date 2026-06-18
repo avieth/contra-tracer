@@ -1,3 +1,7 @@
+# 0.2.1.1
+
+- Merged PR #15 from @Russoul to decrease allocations and costs incurred by laziness
+
 # 0.2.1.0
 
 - `traceAll` and `traceTraversable` defined (https://github.com/avieth/contra-tracer/pull/9)

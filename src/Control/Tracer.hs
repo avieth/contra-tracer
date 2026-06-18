@@ -171,8 +171,10 @@ import qualified Control.Tracer.Arrow as Arrow
 newtype Tracer m a = Tracer { runTracer :: Arrow.TracerA m a () }
 
 instance Monad m => Contravariant (Tracer m) where
+  -- Strict in `tracer` and strict in the `Tracer` constructor: if the input
+  -- tracer is null and never used, a lazy contramap would build up thunks that
+  -- are never collected.
   contramap f !tracer = Tracer $! (arr f >>> use tracer)
-  {-# INLINE contramap #-}
 
 -- | @tr1 <> tr2@ will run @tr1@ and then @tr2@ with the same input.
 instance Monad m => Semigroup (Tracer m s) where

@@ -39,8 +39,8 @@ data TracerA m a b where
 -- | The resulting Kleisli arrow includes all of the effects required to do
 -- the emitting part.
 runTracerA :: Monad m => TracerA m a () -> Kleisli m a ()
-runTracerA (Emitting emits _noEmits) = Kleisli (\x -> runKleisli emits x >> pure ())
-runTracerA (Squelching     _       ) = Kleisli (const (pure ()))
+runTracerA (Emitting emits _noEmits) = emits >>> arr (const ())
+runTracerA (Squelching     _       ) =           arr (const ())
 
 -- | Ignore the input and do not emit. The name is intended to lead to clear
 -- and suggestive arrow expressions.
@@ -101,8 +101,8 @@ nat h (Emitting   (Kleisli k) (Kleisli l)) = Emitting   (Kleisli (h . k)) (Kleis
 --
 -- allocates ~1,000 bytes of short-lived thunks per '(***)' level per dispatch
 -- because the lazy irrefutable pattern @~(b,d)@ in 'first' allocates two
--- thunks on every call. GHC issue #10528 prevents the simplifier from
--- collapsing this. This strict version eliminates all per-dispatch allocation.
+-- thunks on every call that the simplifier cannot eliminate. This strict
+-- version eliminates all per-dispatch allocation.
 infixr 3 ****
 (****) :: Monad m => Kleisli m a b -> Kleisli m c d -> Kleisli m (a, c) (b, d)
 (Kleisli f) **** (Kleisli g) =
